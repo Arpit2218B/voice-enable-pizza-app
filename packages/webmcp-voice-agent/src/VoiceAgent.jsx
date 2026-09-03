@@ -1,5 +1,10 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { SPEECH_SOFT_ERRORS, useSpeechOutput, useSpeechRecognition } from "./useSpeech.js";
+import {
+  getVoicePreference,
+  OPENAI_VOICES,
+  setVoicePreference,
+} from "./voicePrefs.js";
 import "./VoiceAgent.css";
 
 export const DEFAULT_BODY_CLASSES = {
@@ -48,7 +53,8 @@ export function VoiceAgent({
   scrollKey,
 }) {
   const { busy, apiKey, setApiKey, ask, resetConversation, hasKey } = agent;
-  const { speaking, say, stop: stopSpeaking } = useSpeechOutput();
+  const [voice, setVoice] = useState(() => getVoicePreference());
+  const { speaking, say, stop: stopSpeaking } = useSpeechOutput({ apiKey, voice });
   const [open, setOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [status, setStatus] = useState("idle");
@@ -286,6 +292,23 @@ export function VoiceAgent({
               autoComplete="off"
               onChange={(event) => setApiKey(event.target.value.trim())}
             />
+          </label>
+          <label>
+            Voice
+            <select
+              value={voice}
+              onChange={(event) => {
+                const next = event.target.value;
+                setVoice(next);
+                setVoicePreference(next);
+              }}
+            >
+              {OPENAI_VOICES.map((option) => (
+                <option key={option.id} value={option.id}>
+                  {option.label}
+                </option>
+              ))}
+            </select>
           </label>
           <div className="wva-voice-settings-actions">
             <button

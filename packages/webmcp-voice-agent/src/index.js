@@ -1,6 +1,12 @@
 export { createWebMCPAgent } from "./createAgent.js";
 export { getApiKey, setApiKey } from "./apiKey.js";
 export {
+  DEFAULT_OPENAI_VOICE,
+  getVoicePreference,
+  OPENAI_VOICES,
+  setVoicePreference,
+} from "./voicePrefs.js";
+export {
   formatToolResultForOpenAI,
   getModelContext,
   runModelTool,

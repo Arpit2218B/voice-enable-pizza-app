@@ -245,7 +245,8 @@
   font-weight: 600;
 }
 
-.wva-voice-settings input {
+.wva-voice-settings input,
+.wva-voice-settings select {
   padding: 10px 12px;
   border: 1px solid rgba(255, 255, 255, 0.12);
   border-radius: 12px;
@@ -253,6 +254,10 @@
   background: rgba(0, 0, 0, 0.28);
   color: white;
   font-size: 16px;
+}
+
+.wva-voice-settings select {
+  cursor: pointer;
 }
 
 .wva-voice-settings-actions {

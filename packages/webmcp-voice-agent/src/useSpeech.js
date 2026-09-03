@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
+import { DEFAULT_OPENAI_VOICE } from "./voicePrefs.js";
 
 function getRecognitionCtor() {
   if (typeof window === "undefined") return null;
@@ -7,6 +8,68 @@ function getRecognitionCtor() {
 
 /** Benign Web Speech errors — safe to show inline, not as a blocking toast. */
 export const SPEECH_SOFT_ERRORS = new Set(["no-speech"]);
+
+const OPENAI_TTS_ENDPOINT = "https://api.openai.com/v1/audio/speech";
+const BROWSER_VOICE_PATTERNS = [
+  /Samantha/i,
+  /Karen/i,
+  /Daniel/i,
+  /Google US English/i,
+  /Microsoft .* Natural/i,
+  /Enhanced/i,
+  /Premium/i,
+  /Neural/i,
+];
+
+let activeAudio = null;
+let activeBlobUrl = null;
+let activeAbort = null;
+
+function stopActivePlayback() {
+  activeAbort?.();
+  activeAbort = null;
+
+  if (activeAudio) {
+    activeAudio.pause();
+    activeAudio.src = "";
+    activeAudio = null;
+  }
+
+  if (activeBlobUrl) {
+    URL.revokeObjectURL(activeBlobUrl);
+    activeBlobUrl = null;
+  }
+
+  if (typeof window !== "undefined") {
+    window.speechSynthesis?.cancel();
+  }
+}
+
+function pickBrowserVoice(voices, lang = "en") {
+  const matches = voices.filter((voice) => voice.lang?.toLowerCase().startsWith(lang));
+  for (const pattern of BROWSER_VOICE_PATTERNS) {
+    const match = matches.find((voice) => pattern.test(voice.name));
+    if (match) return match;
+  }
+  const cloud = matches.find((voice) => !voice.localService);
+  if (cloud) return cloud;
+  return matches[0] || voices[0] || null;
+}
+
+function loadBrowserVoices() {
+  if (typeof window === "undefined" || !window.speechSynthesis) {
+    return Promise.resolve([]);
+  }
+
+  const existing = window.speechSynthesis.getVoices();
+  if (existing.length) return Promise.resolve(existing);
+
+  return new Promise((resolve) => {
+    const finish = () => resolve(window.speechSynthesis.getVoices());
+    window.speechSynthesis.onvoiceschanged = finish;
+    window.setTimeout(finish, 300);
+  });
+}
 
 async function warmUpMicrophone() {
   if (!navigator.mediaDevices?.getUserMedia) {
@@ -205,7 +268,7 @@ export function useSpeechRecognition({ onFinal, onError, lang = "en-US" } = {}) 
       return;
     }
 
-    window.speechSynthesis?.cancel();
+    stopActivePlayback();
 
     const prev = recognitionRef.current;
     if (prev) {
@@ -253,7 +316,7 @@ export function useSpeechRecognition({ onFinal, onError, lang = "en-US" } = {}) 
   return { supported, listening, interim, start, stop };
 }
 
-export function speak(text, { rate = 1, pitch = 1, onEnd, onError } = {}) {
+function speakBrowser(text, { rate = 0.94, pitch = 1.02, voice, onEnd, onError } = {}) {
   if (typeof window === "undefined" || !window.speechSynthesis) {
     onError?.(new Error("Speech synthesis is not supported."));
     return () => {};
@@ -263,6 +326,7 @@ export function speak(text, { rate = 1, pitch = 1, onEnd, onError } = {}) {
   const utterance = new SpeechSynthesisUtterance(text);
   utterance.rate = rate;
   utterance.pitch = pitch;
+  if (voice) utterance.voice = voice;
   utterance.onend = () => onEnd?.();
   utterance.onerror = (event) => {
     if (event.error === "interrupted" || event.error === "canceled") {
@@ -276,9 +340,151 @@ export function speak(text, { rate = 1, pitch = 1, onEnd, onError } = {}) {
   return () => window.speechSynthesis.cancel();
 }
 
-export function useSpeechOutput() {
+async function speakOpenAI(text, { apiKey, voice = DEFAULT_OPENAI_VOICE, onEnd, onError }) {
+  const controller = new AbortController();
+  activeAbort = () => controller.abort();
+
+  const response = await fetch(OPENAI_TTS_ENDPOINT, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${apiKey}`,
+    },
+    body: JSON.stringify({
+      model: "tts-1",
+      input: text,
+      voice,
+      speed: 1,
+    }),
+    signal: controller.signal,
+  });
+
+  if (!response.ok) {
+    const payload = await response.json().catch(() => ({}));
+    throw new Error(payload.error?.message || `OpenAI TTS failed (${response.status})`);
+  }
+
+  const blob = await response.blob();
+  const url = URL.createObjectURL(blob);
+  activeBlobUrl = url;
+
+  const audio = new Audio(url);
+  activeAudio = audio;
+  activeAbort = null;
+
+  await new Promise((resolve, reject) => {
+    const cleanup = () => {
+      if (activeBlobUrl === url) {
+        URL.revokeObjectURL(url);
+        activeBlobUrl = null;
+      }
+      if (activeAudio === audio) activeAudio = null;
+    };
+
+    audio.onended = () => {
+      cleanup();
+      onEnd?.();
+      resolve();
+    };
+    audio.onerror = () => {
+      cleanup();
+      const error = new Error("Audio playback failed.");
+      onError?.(error);
+      reject(error);
+    };
+    audio.play().catch((error) => {
+      cleanup();
+      onError?.(error);
+      reject(error);
+    });
+  });
+}
+
+/**
+ * Speak text using OpenAI TTS when an API key is available, otherwise browser TTS.
+ */
+export function speak(
+  text,
+  {
+    apiKey,
+    voice = DEFAULT_OPENAI_VOICE,
+    engine = "auto",
+    rate,
+    pitch,
+    onEnd,
+    onError,
+  } = {}
+) {
+  stopActivePlayback();
+
+  const trimmed = text?.trim();
+  if (!trimmed) {
+    onEnd?.();
+    return () => {};
+  }
+
+  const useOpenAI = engine === "openai" || (engine === "auto" && Boolean(apiKey));
+  let cancelled = false;
+
+  const finish = () => {
+    if (!cancelled) onEnd?.();
+  };
+
+  const fail = (error) => {
+    if (!cancelled) onError?.(error);
+  };
+
+  if (useOpenAI && apiKey) {
+    speakOpenAI(trimmed, { apiKey, voice, onEnd: finish, onError: fail }).catch(async (error) => {
+      if (cancelled || error?.name === "AbortError") {
+        finish();
+        return;
+      }
+
+      try {
+        const voices = await loadBrowserVoices();
+        const browserVoice = pickBrowserVoice(voices);
+        speakBrowser(trimmed, {
+          rate,
+          pitch,
+          voice: browserVoice,
+          onEnd: finish,
+          onError: fail,
+        });
+      } catch (fallbackError) {
+        fail(fallbackError);
+      }
+    });
+  } else {
+    loadBrowserVoices()
+      .then((voices) => {
+        if (cancelled) return;
+        const browserVoice = pickBrowserVoice(voices);
+        speakBrowser(trimmed, {
+          rate,
+          pitch,
+          voice: browserVoice,
+          onEnd: finish,
+          onError: fail,
+        });
+      })
+      .catch((error) => fail(error));
+  }
+
+  return () => {
+    cancelled = true;
+    stopActivePlayback();
+  };
+}
+
+export function useSpeechOutput({ apiKey, voice = DEFAULT_OPENAI_VOICE } = {}) {
   const [speaking, setSpeaking] = useState(false);
   const cancelRef = useRef(() => {});
+  const apiKeyRef = useRef(apiKey);
+  const voiceRef = useRef(voice);
+
+  apiKeyRef.current = apiKey;
+  voiceRef.current = voice;
 
   const stop = useCallback(() => {
     cancelRef.current();
@@ -291,6 +497,8 @@ export function useSpeechOutput() {
         stop();
         setSpeaking(true);
         cancelRef.current = speak(text, {
+          apiKey: apiKeyRef.current,
+          voice: voiceRef.current,
           onEnd: () => {
             setSpeaking(false);
             resolve();
