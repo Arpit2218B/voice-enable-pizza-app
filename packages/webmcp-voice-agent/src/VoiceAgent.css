@@ -1,4 +1,4 @@
-.forno-voice-agent {
+.wva-voice-agent {
   position: fixed;
   z-index: 40;
   font-family: var(--font-body);
@@ -8,22 +8,22 @@
   pointer-events: none;
 }
 
-.forno-voice-agent > * {
+.wva-voice-agent > * {
   pointer-events: auto;
 }
 
-.forno-voice-agent.is-open {
+.wva-voice-agent.is-open {
   top: auto;
   height: var(--voice-dock-h, min(240px, 34dvh));
   z-index: 30;
 }
 
-.forno-voice-agent.is-listing.is-open {
+.wva-voice-agent.is-listing.is-open {
   height: auto;
   min-height: 0;
 }
 
-.forno-voice-canvas--listing {
+.wva-voice-canvas--listing {
   height: auto;
   overflow: visible;
   border-top: 1px solid rgba(255, 255, 255, 0.08);
@@ -34,11 +34,11 @@
   padding-bottom: env(safe-area-inset-bottom);
 }
 
-.forno-voice-canvas--listing .forno-voice-canvas__wash {
+.wva-voice-canvas--listing .wva-voice-canvas__wash {
   background: linear-gradient(180deg, rgba(18, 22, 20, 0.2), #121614 50%);
 }
 
-.forno-voice-canvas--listing .forno-voice-canvas__bloom {
+.wva-voice-canvas--listing .wva-voice-canvas__bloom {
   width: 160px;
   height: 160px;
   left: 10%;
@@ -46,21 +46,21 @@
   opacity: 0.65;
 }
 
-.forno-voice-canvas--listing .forno-voice-canvas__orb-zone {
+.wva-voice-canvas--listing .wva-voice-canvas__orb-zone {
   grid-template-columns: auto 1fr auto;
   align-items: center;
   gap: 12px;
   padding: 12px 16px 14px;
 }
 
-.forno-voice-canvas__side {
+.wva-voice-canvas__side {
   display: flex;
   align-items: center;
   gap: 8px;
   justify-self: end;
 }
 
-.forno-voice-cart-link {
+.wva-voice-cart-link {
   font-size: 0.78rem;
   font-weight: 700;
   color: rgba(246, 243, 238, 0.55);
@@ -68,12 +68,12 @@
   white-space: nowrap;
 }
 
-.forno-voice-canvas--listing .forno-voice-orb-btn {
+.wva-voice-canvas--listing .wva-voice-orb-btn {
   width: 72px;
   height: 72px;
 }
 
-.forno-voice-canvas--listing .forno-voice-status {
+.wva-voice-canvas--listing .wva-voice-status {
   text-transform: uppercase;
   letter-spacing: 0.12em;
   font-size: 0.72rem;
@@ -81,13 +81,13 @@
   font-weight: 800;
 }
 
-.forno-voice-canvas--listing .forno-voice-settings {
+.wva-voice-canvas--listing .wva-voice-settings {
   margin: 8px 16px 0;
   width: calc(100% - 32px);
 }
 
 /* —— Launcher —— */
-.forno-voice-launcher {
+.wva-voice-launcher {
   position: absolute;
   left: 50%;
   bottom: max(18px, env(safe-area-inset-bottom));
@@ -103,17 +103,17 @@
   transition: transform 0.3s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
-.forno-voice-launcher:hover,
-.forno-voice-launcher:active {
+.wva-voice-launcher:hover,
+.wva-voice-launcher:active {
   transform: translateX(-50%) scale(1.08);
 }
 
-.forno-voice-launcher .forno-orb {
+.wva-voice-launcher .wva-orb {
   width: 100%;
   height: 100%;
 }
 
-.forno-voice-launcher__hint {
+.wva-voice-launcher__hint {
   position: absolute;
   left: 50%;
   bottom: -18px;
@@ -127,7 +127,7 @@
 }
 
 /* —— Immersive voice canvas (not a sheet) —— */
-.forno-voice-canvas {
+.wva-voice-canvas {
   position: relative;
   height: 100%;
   width: 100%;
@@ -139,7 +139,7 @@
   animation: canvas-in 0.55s cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 
-.forno-voice-canvas__wash {
+.wva-voice-canvas__wash {
   pointer-events: none;
   position: absolute;
   inset: 0;
@@ -149,7 +149,7 @@
     linear-gradient(180deg, transparent 0%, rgba(8, 10, 9, 0.55) 35%, #090b0a 100%);
 }
 
-.forno-voice-canvas__bloom {
+.wva-voice-canvas__bloom {
   pointer-events: none;
   position: absolute;
   left: 18%;
@@ -162,7 +162,7 @@
   animation: bloom-breathe 4.5s ease-in-out infinite;
 }
 
-.forno-voice-canvas__chrome {
+.wva-voice-canvas__chrome {
   position: relative;
   z-index: 2;
   display: flex;
@@ -172,7 +172,7 @@
   padding: 8px 18px 0;
 }
 
-.forno-voice-canvas__meta {
+.wva-voice-canvas__meta {
   display: inline-flex;
   align-items: center;
   gap: 8px;
@@ -182,7 +182,7 @@
   letter-spacing: -0.02em;
 }
 
-.forno-voice-canvas__pulse {
+.wva-voice-canvas__pulse {
   width: 8px;
   height: 8px;
   border-radius: 50%;
@@ -191,7 +191,7 @@
   animation: live-blink 1.6s ease-in-out infinite;
 }
 
-.forno-voice-canvas__cart {
+.wva-voice-canvas__cart {
   margin-left: 4px;
   padding: 4px 8px;
   border-radius: 999px;
@@ -202,12 +202,12 @@
   color: rgba(246, 243, 238, 0.7);
 }
 
-.forno-voice-canvas__actions {
+.wva-voice-canvas__actions {
   display: flex;
   gap: 6px;
 }
 
-.forno-voice-icon-btn {
+.wva-voice-icon-btn {
   width: 36px;
   height: 36px;
   border: 0;
@@ -218,13 +218,13 @@
   transition: background 0.2s ease, transform 0.2s ease;
 }
 
-.forno-voice-icon-btn:hover,
-.forno-voice-icon-btn:active {
+.wva-voice-icon-btn:hover,
+.wva-voice-icon-btn:active {
   background: rgba(255, 255, 255, 0.12);
   transform: scale(1.05);
 }
 
-.forno-voice-settings {
+.wva-voice-settings {
   position: relative;
   z-index: 2;
   width: min(360px, calc(100% - 32px));
@@ -238,14 +238,14 @@
   animation: fade-up 0.3s ease both;
 }
 
-.forno-voice-settings label {
+.wva-voice-settings label {
   display: grid;
   gap: 6px;
   font-size: 0.85rem;
   font-weight: 600;
 }
 
-.forno-voice-settings input {
+.wva-voice-settings input {
   padding: 10px 12px;
   border: 1px solid rgba(255, 255, 255, 0.12);
   border-radius: 12px;
@@ -255,13 +255,13 @@
   font-size: 16px;
 }
 
-.forno-voice-settings-actions {
+.wva-voice-settings-actions {
   display: flex;
   justify-content: flex-end;
   gap: 8px;
 }
 
-.forno-voice-settings-actions button {
+.wva-voice-settings-actions button {
   border: 0;
   border-radius: 999px;
   padding: 8px 14px;
@@ -271,12 +271,12 @@
   cursor: pointer;
 }
 
-.forno-voice-settings-actions button.primary {
+.wva-voice-settings-actions button.primary {
   background: #f6f3ee;
   color: #121816;
 }
 
-.forno-voice-canvas__orb-zone {
+.wva-voice-canvas__orb-zone {
   position: relative;
   z-index: 2;
   display: grid;
@@ -287,13 +287,13 @@
   min-height: 0;
 }
 
-.forno-voice-canvas__copy {
+.wva-voice-canvas__copy {
   display: grid;
   gap: 4px;
   min-width: 0;
 }
 
-.forno-voice-caption {
+.wva-voice-caption {
   margin: 0;
   max-height: 2.6em;
   overflow: hidden;
@@ -307,7 +307,7 @@
   animation: fade-up 0.28s ease both;
 }
 
-.forno-voice-status {
+.wva-voice-status {
   margin: 0;
   font-family: var(--font-display);
   font-weight: 700;
@@ -317,23 +317,23 @@
   text-align: left;
 }
 
-.forno-voice-status--listening {
+.wva-voice-status--listening {
   color: #ffb39a;
 }
 
-.forno-voice-status--thinking {
+.wva-voice-status--thinking {
   color: #c8e0cf;
 }
 
-.forno-voice-status--speaking {
+.wva-voice-status--speaking {
   color: #ffd2a8;
 }
 
-.forno-voice-hint {
+.wva-voice-hint {
   display: none;
 }
 
-.forno-voice-orb-btn {
+.wva-voice-orb-btn {
   position: relative;
   width: 108px;
   height: 108px;
@@ -349,22 +349,22 @@
   flex-shrink: 0;
 }
 
-.forno-voice-orb-btn:hover:not(:disabled),
-.forno-voice-orb-btn:active:not(:disabled) {
+.wva-voice-orb-btn:hover:not(:disabled),
+.wva-voice-orb-btn:active:not(:disabled) {
   transform: scale(1.05);
 }
 
-.forno-voice-orb-btn:disabled {
+.wva-voice-orb-btn:disabled {
   cursor: wait;
 }
 
-.forno-voice-orb-btn:focus-visible {
+.wva-voice-orb-btn:focus-visible {
   outline: 2px solid rgba(255, 180, 140, 0.7);
   outline-offset: 8px;
 }
 
 /* —— Orb —— */
-.forno-orb {
+.wva-orb {
   position: relative;
   width: 100%;
   height: 100%;
@@ -372,7 +372,7 @@
   place-items: center;
 }
 
-.forno-orb__glow {
+.wva-orb__glow {
   position: absolute;
   inset: -28%;
   border-radius: 50%;
@@ -387,7 +387,7 @@
   animation: orb-breathe 3.6s ease-in-out infinite;
 }
 
-.forno-orb__core {
+.wva-orb__core {
   position: relative;
   width: 56%;
   height: 56%;
@@ -401,7 +401,7 @@
   animation: orb-breathe 3.6s ease-in-out infinite;
 }
 
-.forno-orb__blob {
+.wva-orb__blob {
   position: absolute;
   border-radius: 50%;
   filter: blur(14px);
@@ -409,7 +409,7 @@
   will-change: transform;
 }
 
-.forno-orb__blob--1 {
+.wva-orb__blob--1 {
   width: 78%;
   height: 78%;
   left: 5%;
@@ -418,7 +418,7 @@
   animation: blob-morph-1 5s ease-in-out infinite;
 }
 
-.forno-orb__blob--2 {
+.wva-orb__blob--2 {
   width: 70%;
   height: 70%;
   right: -8%;
@@ -427,7 +427,7 @@
   animation: blob-morph-2 6s ease-in-out infinite;
 }
 
-.forno-orb__blob--3 {
+.wva-orb__blob--3 {
   width: 62%;
   height: 62%;
   left: 10%;
@@ -436,7 +436,7 @@
   animation: blob-morph-3 4.5s ease-in-out infinite;
 }
 
-.forno-orb__shine {
+.wva-orb__shine {
   position: absolute;
   inset: 12% 18% auto;
   height: 28%;
@@ -446,7 +446,7 @@
   opacity: 0.7;
 }
 
-.forno-orb__ring {
+.wva-orb__ring {
   position: absolute;
   inset: 4%;
   border-radius: 50%;
@@ -455,7 +455,7 @@
   pointer-events: none;
 }
 
-.forno-orb__wave {
+.wva-orb__wave {
   position: absolute;
   inset: 0;
   display: none;
@@ -466,7 +466,7 @@
   pointer-events: none;
 }
 
-.forno-orb__wave i {
+.wva-orb__wave i {
   display: block;
   width: 4px;
   height: 12px;
@@ -475,66 +475,66 @@
   animation: wave-bar 0.9s ease-in-out infinite;
 }
 
-.forno-orb__wave i:nth-child(2) {
+.wva-orb__wave i:nth-child(2) {
   animation-delay: 0.08s;
   height: 18px;
 }
-.forno-orb__wave i:nth-child(3) {
+.wva-orb__wave i:nth-child(3) {
   animation-delay: 0.16s;
   height: 26px;
 }
-.forno-orb__wave i:nth-child(4) {
+.wva-orb__wave i:nth-child(4) {
   animation-delay: 0.24s;
   height: 18px;
 }
-.forno-orb__wave i:nth-child(5) {
+.wva-orb__wave i:nth-child(5) {
   animation-delay: 0.32s;
 }
 
-.forno-orb--listening .forno-orb__glow {
+.wva-orb--listening .wva-orb__glow {
   animation: orb-listen-glow 1.4s ease-in-out infinite;
 }
 
-.forno-orb--listening .forno-orb__core {
+.wva-orb--listening .wva-orb__core {
   animation: orb-listen-core 1.4s ease-in-out infinite;
 }
 
-.forno-orb--listening .forno-orb__ring {
+.wva-orb--listening .wva-orb__ring {
   opacity: 1;
   animation: ring-expand 1.8s ease-out infinite;
 }
 
-.forno-orb--listening .forno-orb__ring--b {
+.wva-orb--listening .wva-orb__ring--b {
   animation-delay: 0.45s;
 }
 
-.forno-orb--listening .forno-orb__ring--c {
+.wva-orb--listening .wva-orb__ring--c {
   animation-delay: 0.9s;
 }
 
-.forno-orb--thinking .forno-orb__glow {
+.wva-orb--thinking .wva-orb__glow {
   animation: orb-think-glow 2s linear infinite;
 }
 
-.forno-orb--thinking .forno-orb__core {
+.wva-orb--thinking .wva-orb__core {
   animation: orb-spin 2.8s linear infinite;
 }
 
-.forno-orb--thinking .forno-orb__blob--1,
-.forno-orb--thinking .forno-orb__blob--2,
-.forno-orb--thinking .forno-orb__blob--3 {
+.wva-orb--thinking .wva-orb__blob--1,
+.wva-orb--thinking .wva-orb__blob--2,
+.wva-orb--thinking .wva-orb__blob--3 {
   animation-duration: 1.8s;
 }
 
-.forno-orb--speaking .forno-orb__glow {
+.wva-orb--speaking .wva-orb__glow {
   animation: orb-speak-glow 0.9s ease-in-out infinite;
 }
 
-.forno-orb--speaking .forno-orb__core {
+.wva-orb--speaking .wva-orb__core {
   animation: orb-speak-core 0.9s ease-in-out infinite;
 }
 
-.forno-orb--speaking .forno-orb__wave {
+.wva-orb--speaking .wva-orb__wave {
   display: flex;
   opacity: 1;
   z-index: 2;
@@ -742,27 +742,27 @@
 }
 
 @media (min-width: 820px) {
-  .forno-voice-launcher {
+  .wva-voice-launcher {
     left: auto;
     right: 24px;
     transform: none;
   }
 
-  .forno-voice-launcher:hover,
-  .forno-voice-launcher:active {
+  .wva-voice-launcher:hover,
+  .wva-voice-launcher:active {
     transform: scale(1.08);
   }
 
-  .forno-voice-launcher__hint {
+  .wva-voice-launcher__hint {
     display: none;
   }
 
-  .forno-voice-orb-btn {
+  .wva-voice-orb-btn {
     width: 120px;
     height: 120px;
   }
 
-  .forno-voice-canvas__orb-zone {
+  .wva-voice-canvas__orb-zone {
     max-width: 560px;
     margin: 0 auto;
     width: 100%;
@@ -770,17 +770,17 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .forno-orb__glow,
-  .forno-orb__core,
-  .forno-orb__blob,
-  .forno-orb__ring,
-  .forno-orb__wave i,
-  .forno-voice-canvas,
-  .forno-voice-orb-btn,
-  .forno-voice-caption,
-  .forno-voice-settings,
-  .forno-voice-canvas__bloom,
-  .forno-voice-canvas__pulse {
+  .wva-orb__glow,
+  .wva-orb__core,
+  .wva-orb__blob,
+  .wva-orb__ring,
+  .wva-orb__wave i,
+  .wva-voice-canvas,
+  .wva-voice-orb-btn,
+  .wva-voice-caption,
+  .wva-voice-settings,
+  .wva-voice-canvas__bloom,
+  .wva-voice-canvas__pulse {
     animation: none !important;
   }
 }

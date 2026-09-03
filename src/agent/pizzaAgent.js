@@ -1,34 +1,7 @@
+import { createWebMCPAgent } from "@webmcp/voice-agent";
 import { PIZZA_TOOL_NAMES, PIZZA_TOOLS } from "../webmcp/toolDefs";
-import { getModelContext, runModelTool } from "./modelContext";
 
 const KEY_STORAGE = "forno_openai_api_key";
-const DEFAULT_MODEL = "gpt-4o-mini";
-const ENDPOINT = "https://api.openai.com/v1/chat/completions";
-const ALLOWED = new Set(PIZZA_TOOL_NAMES);
-
-export function getOpenAiKey() {
-  return (
-    globalThis.OPENAI_API_KEY ||
-    (typeof window !== "undefined" ? window.localStorage.getItem(KEY_STORAGE) : "") ||
-    ""
-  );
-}
-
-export function setOpenAiKey(value) {
-  if (typeof window === "undefined") return;
-  if (value) window.localStorage.setItem(KEY_STORAGE, value);
-  else window.localStorage.removeItem(KEY_STORAGE);
-}
-
-function parseToolArgs(raw) {
-  if (raw == null || raw === "") return {};
-  if (typeof raw === "object") return raw;
-  try {
-    return JSON.parse(String(raw));
-  } catch {
-    return {};
-  }
-}
 
 function systemPrompt(toolNames) {
   return [
@@ -111,186 +84,70 @@ function systemPrompt(toolNames) {
   ].join("\n");
 }
 
-function parseInputSchema(schema) {
-  if (!schema) return { type: "object", properties: {} };
-  if (typeof schema === "string") {
-    try {
-      const parsed = JSON.parse(schema);
-      if (parsed && typeof parsed === "object") return parsed;
-    } catch {
-      /* fall through */
-    }
-  }
-  if (typeof schema === "object") return schema;
-  return { type: "object", properties: {} };
-}
-
-/** OpenAI tool defs from our pizza tool catalog (avoids stringified polyfill schemas). */
-function fetchPizzaTools() {
-  return PIZZA_TOOLS.map((tool) => ({
-    type: "function",
-    function: {
-      name: tool.name,
-      description: tool.description,
-      parameters: parseInputSchema(tool.inputSchema),
-    },
-  }));
-}
-
-async function generate(messages, tools, apiKey, model = DEFAULT_MODEL) {
-  if (!apiKey) throw new Error("Add an OpenAI API key in voice settings.");
-
-  const body = { model, messages };
-  if (tools.length) body.tools = tools;
-
-  const response = await fetch(ENDPOINT, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${apiKey}`,
-    },
-    body: JSON.stringify(body),
+function sortToolCalls(calls) {
+  return [...calls].sort((a, b) => {
+    const rank = (name) => {
+      if (name === "list_pizzas") return 0;
+      if (name === "match_pizzas") return 1;
+      return 2;
+    };
+    return rank(a.function?.name) - rank(b.function?.name);
   });
-
-  const payload = await response.json().catch(() => ({}));
-  if (!response.ok) {
-    const message =
-      payload.error?.message || `OpenAI request failed (${response.status})`;
-    throw new Error(message);
-  }
-  return payload;
 }
 
-/**
- * Run a pizza-only tool loop against modelContext + OpenAI.
- * history is mutated across calls for conversation continuity.
- */
-export async function askPizzaAgent(question, history, { apiKey = getOpenAiKey() } = {}) {
-  const ctx = getModelContext();
-  if (!ctx?.getTools || !ctx?.executeTool) {
-    throw new Error("WebMCP modelContext is not available.");
+function beforeToolCall({ name, args, turnState }) {
+  if (name === "match_pizzas" && turnState.matchPizzasDone) {
+    return {
+      skip: true,
+      result: {
+        skipped: true,
+        error: "match_pizzas already used this turn. Speak your answer now.",
+      },
+    };
   }
 
-  const tools = fetchPizzaTools();
-  if (!tools.length) {
-    throw new Error("No Forno pizza tools are configured.");
+  if (name === "get_pizza" && (turnState.matchPizzasDone || turnState.successfulGetPizza >= 1)) {
+    return {
+      skip: true,
+      result: {
+        skipped: true,
+        error:
+          "Skip get_pizza — browse focus is handled by match_pizzas, or get_pizza already succeeded.",
+      },
+    };
   }
 
-  const toolNames = tools.map((tool) => tool.function.name);
-  const prompt = systemPrompt(toolNames);
-
-  if (!history.length) {
-    history.push({ role: "system", content: prompt });
-  } else if (history[0]?.role === "system") {
-    history[0].content = prompt;
-  }
-
-  history.push({ role: "user", content: question });
-
-  const used = [];
-  let listPizzasDone = false;
-  let matchPizzasDone = false;
-  let matchNudgeSent = false;
-  let successfulGetPizza = 0;
-
-  for (let round = 0; round < 8; round += 1) {
-    const payload = await generate(history, tools, apiKey);
-    const message = payload.choices?.[0]?.message;
-    if (!message) return { text: "No response from OpenAI.", tools: used };
-
-    const toolCalls = message.tool_calls || [];
-    if (!toolCalls.length) {
-      const reply =
-        (message.content || "").trim() ||
-        "I couldn't find an answer. Try asking about the menu or cart.";
-
-      // Browse must finish with match_pizzas so single-match scroll runs in code.
-      if (listPizzasDone && !matchPizzasDone && !matchNudgeSent) {
-        matchNudgeSent = true;
-        history.push({
-          role: "user",
-          content:
-            "[System] You must call match_pizzas now with pizzaIds set to the matching pizza id(s) from list_pizzas before any spoken answer. Use [] if none match, one id if one matches, or several ids if several match.",
-        });
-        continue;
-      }
-
-      history.push({ role: "assistant", content: reply });
-      return { text: reply, tools: used };
-    }
-
-    history.push({
-      role: "assistant",
-      content: message.content || null,
-      tool_calls: toolCalls,
-    });
-
-    // Prefer list_pizzas before match_pizzas if the model batches them.
-    const orderedCalls = [...toolCalls].sort((a, b) => {
-      const rank = (name) => {
-        if (name === "list_pizzas") return 0;
-        if (name === "match_pizzas") return 1;
-        return 2;
-      };
-      return rank(a.function?.name) - rank(b.function?.name);
-    });
-
-    for (const call of orderedCalls) {
-      const name = call.function?.name;
-      if (!ALLOWED.has(name)) {
-        history.push({
-          role: "tool",
-          tool_call_id: call.id,
-          content: JSON.stringify({ error: `Tool "${name}" is not allowed.` }),
-        });
-        continue;
-      }
-
-      const args = parseToolArgs(call.function?.arguments);
-
-      if (name === "match_pizzas" && matchPizzasDone) {
-        history.push({
-          role: "tool",
-          tool_call_id: call.id,
-          content: JSON.stringify({
-            skipped: true,
-            error: "match_pizzas already used this turn. Speak your answer now.",
-          }),
-        });
-        used.push({ name, args, skipped: true });
-        continue;
-      }
-
-      if (name === "get_pizza" && (matchPizzasDone || successfulGetPizza >= 1)) {
-        history.push({
-          role: "tool",
-          tool_call_id: call.id,
-          content: JSON.stringify({
-            skipped: true,
-            error:
-              "Skip get_pizza — browse focus is handled by match_pizzas, or get_pizza already succeeded.",
-          }),
-        });
-        used.push({ name, args, skipped: true });
-        continue;
-      }
-
-      const result = await runModelTool(name, args);
-      used.push({ name, args });
-      history.push({
-        role: "tool",
-        tool_call_id: call.id,
-        content: JSON.stringify(result),
-      });
-
-      if (name === "list_pizzas") listPizzasDone = true;
-      if (name === "match_pizzas" && !result?.error) matchPizzasDone = true;
-      if (name === "get_pizza" && result && !result.error) successfulGetPizza += 1;
-    }
-  }
-
-  return {
-    text: "I couldn't finish that request. Please try again.",
-    tools: used,
-  };
+  return null;
 }
+
+function afterToolCall({ name, result, turnState }) {
+  if (name === "list_pizzas") turnState.listPizzasDone = true;
+  if (name === "match_pizzas" && !result?.error) turnState.matchPizzasDone = true;
+  if (name === "get_pizza" && result && !result.error) {
+    turnState.successfulGetPizza = (turnState.successfulGetPizza || 0) + 1;
+  }
+}
+
+function beforeFinalReply({ turnState }) {
+  if (turnState.listPizzasDone && !turnState.matchPizzasDone && !turnState.matchNudgeSent) {
+    turnState.matchNudgeSent = true;
+    return {
+      continue: true,
+      nudge:
+        "[System] You must call match_pizzas now with pizzaIds set to the matching pizza id(s) from list_pizzas before any spoken answer. Use [] if none match, one id if one matches, or several ids if several match.",
+    };
+  }
+  return null;
+}
+
+/** Pizza-specific WebMCP agent — register tools in the app, then plug in VoiceAgent. */
+export const pizzaAgent = createWebMCPAgent({
+  storageKey: KEY_STORAGE,
+  allowedToolNames: PIZZA_TOOL_NAMES,
+  toolDefs: PIZZA_TOOLS,
+  getSystemPrompt: systemPrompt,
+  sortToolCalls,
+  beforeToolCall,
+  afterToolCall,
+  beforeFinalReply,
+});

@@ -1,6 +1,6 @@
 import { BrowserRouter, Route, Routes, useLocation } from "react-router-dom";
 import { Header, Toast } from "./components/Header";
-import { VoiceAgent } from "./components/VoiceAgent";
+import { PizzaVoiceAgent } from "./components/PizzaVoiceAgent";
 import { PizzaProvider } from "./context/PizzaContext";
 import { CartPage } from "./pages/CartPage";
 import { CustomizePage } from "./pages/CustomizePage";
@@ -31,7 +31,7 @@ function Shell() {
           )}
         </div>
         <Toast />
-        <VoiceAgent listingMode={isVoiceStage} />
+        <PizzaVoiceAgent listingMode={isVoiceStage} />
       </div>
     </PizzaProvider>
   );

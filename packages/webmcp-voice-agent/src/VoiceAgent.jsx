@@ -1,24 +1,26 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Link, useLocation } from "react-router-dom";
-import { usePizzaApp } from "../context/PizzaContext";
-import { usePizzaAgent } from "../hooks/usePizzaAgent";
-import { useSpeechOutput, useSpeechRecognition } from "../hooks/useSpeech";
+import { SPEECH_SOFT_ERRORS, useSpeechOutput, useSpeechRecognition } from "./useSpeech.js";
 import "./VoiceAgent.css";
+
+export const DEFAULT_BODY_CLASSES = {
+  live: "wva-live",
+  listing: "wva-listing",
+};
 
 function VoiceOrb({ mode }) {
   return (
-    <div className={`forno-orb forno-orb--${mode}`} aria-hidden="true">
-      <span className="forno-orb__glow" />
-      <span className="forno-orb__ring forno-orb__ring--a" />
-      <span className="forno-orb__ring forno-orb__ring--b" />
-      <span className="forno-orb__ring forno-orb__ring--c" />
-      <span className="forno-orb__core">
-        <span className="forno-orb__blob forno-orb__blob--1" />
-        <span className="forno-orb__blob forno-orb__blob--2" />
-        <span className="forno-orb__blob forno-orb__blob--3" />
-        <span className="forno-orb__shine" />
+    <div className={`wva-orb wva-orb--${mode}`} aria-hidden="true">
+      <span className="wva-orb__glow" />
+      <span className="wva-orb__ring wva-orb__ring--a" />
+      <span className="wva-orb__ring wva-orb__ring--b" />
+      <span className="wva-orb__ring wva-orb__ring--c" />
+      <span className="wva-orb__core">
+        <span className="wva-orb__blob wva-orb__blob--1" />
+        <span className="wva-orb__blob wva-orb__blob--2" />
+        <span className="wva-orb__blob wva-orb__blob--3" />
+        <span className="wva-orb__shine" />
       </span>
-      <span className="forno-orb__wave">
+      <span className="wva-orb__wave">
         <i />
         <i />
         <i />
@@ -29,18 +31,40 @@ function VoiceOrb({ mode }) {
   );
 }
 
-export function VoiceAgent({ listingMode = false }) {
-  const { showToast, itemCount, actionFlash } = usePizzaApp();
-  const { busy, apiKey, setApiKey, ask, resetConversation, hasKey } = usePizzaAgent();
+/**
+ * Drop-in voice UI for WebMCP apps. Pair with useVoiceAgent(createWebMCPAgent(...)).
+ */
+export function VoiceAgent({
+  agent,
+  title = "Voice",
+  listingMode = false,
+  onNotify,
+  renderBadge,
+  renderListingSide,
+  launcherLabel = "Talk",
+  stageSelector = ".app-stage",
+  actionSignal,
+  bodyClassNames = DEFAULT_BODY_CLASSES,
+  scrollKey,
+}) {
+  const { busy, apiKey, setApiKey, ask, resetConversation, hasKey } = agent;
   const { speaking, say, stop: stopSpeaking } = useSpeechOutput();
   const [open, setOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [status, setStatus] = useState("idle");
   const [caption, setCaption] = useState("");
-  const location = useLocation();
   const dockRef = useRef(null);
 
   const live = listingMode || open;
+  const liveClass = bodyClassNames.live ?? DEFAULT_BODY_CLASSES.live;
+  const listingClass = bodyClassNames.listing ?? DEFAULT_BODY_CLASSES.listing;
+
+  const notify = useCallback(
+    (message) => {
+      if (message) onNotify?.(message);
+    },
+    [onNotify]
+  );
 
   const setDockHeight = useCallback((px) => {
     document.documentElement.style.setProperty(
@@ -66,38 +90,50 @@ export function VoiceAgent({ listingMode = false }) {
       } catch (error) {
         const message = error?.message || "Something went wrong.";
         setCaption(message);
-        showToast(message);
+        notify(message);
         if (/api key/i.test(message)) setSettingsOpen(true);
       } finally {
         setStatus("idle");
       }
     },
-    [ask, say, showToast, stopSpeaking]
+    [ask, notify, say, stopSpeaking]
   );
 
   const { supported, listening, interim, start, stop } = useSpeechRecognition({
     onFinal: handleTurn,
     onError: (error) => {
-      if (error.message !== "aborted") {
-        setCaption(error.message);
-        showToast(error.message);
+      const code = error.message || "";
+      if (code === "aborted" || code === "interrupted") {
+        setStatus("idle");
+        return;
       }
+      if (SPEECH_SOFT_ERRORS.has(code)) {
+        setCaption(
+          error.heardAudio
+            ? "Didn't catch that — tap to try again."
+            : "No mic audio detected. Check browser mic permission and input device, then tap to retry."
+        );
+        setStatus("idle");
+        return;
+      }
+      setCaption(code);
+      notify(code);
       setStatus("idle");
     },
   });
 
   useEffect(() => {
-    document.body.classList.toggle("forno-voice-live", live);
-    document.body.classList.toggle("forno-listing", listingMode);
+    document.body.classList.toggle(liveClass, live);
+    document.body.classList.toggle(listingClass, listingMode);
     if (!live) {
       setDockHeight(0);
     }
     return () => {
-      document.body.classList.remove("forno-voice-live");
-      document.body.classList.remove("forno-listing");
+      document.body.classList.remove(liveClass);
+      document.body.classList.remove(listingClass);
       setDockHeight(0);
     };
-  }, [live, listingMode, setDockHeight]);
+  }, [live, listingClass, listingMode, liveClass, setDockHeight]);
 
   useEffect(() => {
     if (!live || !dockRef.current) return undefined;
@@ -121,21 +157,20 @@ export function VoiceAgent({ listingMode = false }) {
   }, [live, listingMode, settingsOpen, setDockHeight]);
 
   useEffect(() => {
-    if (!live || !actionFlash?.pizzaId) return;
-    const stage = document.querySelector(".app-stage");
+    if (!live || !actionSignal) return;
+    const stage = document.querySelector(stageSelector);
     if (!stage) return;
     stage.classList.add("is-action-flash");
     const clear = window.setTimeout(() => stage.classList.remove("is-action-flash"), 700);
-    // Carousel scroll is owned by MenuPage via menuFocus (handles navigate timing).
     return () => window.clearTimeout(clear);
-  }, [actionFlash, live]);
+  }, [actionSignal, live, stageSelector]);
 
   useEffect(() => {
-    if (!live || listingMode) return;
-    const stage = document.querySelector(".app-stage");
+    if (!live || listingMode || scrollKey === undefined) return;
+    const stage = document.querySelector(stageSelector);
     if (!stage) return;
     stage.scrollTo({ top: 0, behavior: "smooth" });
-  }, [location.pathname, live, listingMode]);
+  }, [live, listingMode, scrollKey, stageSelector]);
 
   useEffect(() => {
     if (!live || listingMode) return undefined;
@@ -177,11 +212,15 @@ export function VoiceAgent({ listingMode = false }) {
     }
     if (!hasKey) {
       setSettingsOpen(true);
-      showToast("Add your OpenAI API key first.");
+      notify("Add your OpenAI API key first.");
       return;
     }
     if (!supported) {
-      showToast("Voice input needs Chrome or Edge with speech recognition.");
+      notify("Voice input needs Chrome or Edge with speech recognition.");
+      return;
+    }
+    if (typeof window !== "undefined" && !window.isSecureContext) {
+      notify("Microphone needs HTTPS or localhost.");
       return;
     }
     setCaption("");
@@ -190,27 +229,28 @@ export function VoiceAgent({ listingMode = false }) {
   }
 
   const liveCaption = interim || caption;
+  const badge = renderBadge?.();
 
   const speakBar = (
     <section
       ref={dockRef}
-      className={`forno-voice-canvas${listingMode ? " forno-voice-canvas--listing" : ""}`}
-      aria-label="Forno voice"
+      className={`wva-voice-canvas${listingMode ? " wva-voice-canvas--listing" : ""}`}
+      aria-label={`${title} voice`}
     >
-      <div className="forno-voice-canvas__wash" aria-hidden="true" />
-      <div className="forno-voice-canvas__bloom" aria-hidden="true" />
+      <div className="wva-voice-canvas__wash" aria-hidden="true" />
+      <div className="wva-voice-canvas__bloom" aria-hidden="true" />
 
       {listingMode ? null : (
-        <header className="forno-voice-canvas__chrome">
-          <div className="forno-voice-canvas__meta">
-            <span className="forno-voice-canvas__pulse" aria-hidden="true" />
-            <span>Forno</span>
-            {itemCount > 0 ? <span className="forno-voice-canvas__cart">{itemCount} in cart</span> : null}
+        <header className="wva-voice-canvas__chrome">
+          <div className="wva-voice-canvas__meta">
+            <span className="wva-voice-canvas__pulse" aria-hidden="true" />
+            <span>{title}</span>
+            {badge ? <span className="wva-voice-canvas__cart">{badge}</span> : null}
           </div>
-          <div className="forno-voice-canvas__actions">
+          <div className="wva-voice-canvas__actions">
             <button
               type="button"
-              className="forno-voice-icon-btn"
+              className="wva-voice-icon-btn"
               aria-label="Settings"
               onClick={() => setSettingsOpen((v) => !v)}
             >
@@ -218,7 +258,7 @@ export function VoiceAgent({ listingMode = false }) {
             </button>
             <button
               type="button"
-              className="forno-voice-icon-btn"
+              className="wva-voice-icon-btn"
               aria-label="Close voice"
               onClick={() => {
                 stop();
@@ -236,7 +276,7 @@ export function VoiceAgent({ listingMode = false }) {
       )}
 
       {settingsOpen ? (
-        <div className="forno-voice-settings">
+        <div className="wva-voice-settings">
           <label>
             OpenAI API key
             <input
@@ -247,7 +287,7 @@ export function VoiceAgent({ listingMode = false }) {
               onChange={(event) => setApiKey(event.target.value.trim())}
             />
           </label>
-          <div className="forno-voice-settings-actions">
+          <div className="wva-voice-settings-actions">
             <button
               type="button"
               onClick={() => {
@@ -264,9 +304,9 @@ export function VoiceAgent({ listingMode = false }) {
         </div>
       ) : null}
 
-      <div className="forno-voice-canvas__orb-zone">
+      <div className="wva-voice-canvas__orb-zone">
         <button
-          className={`forno-voice-orb-btn forno-voice-orb-btn--${orbMode}`}
+          className={`wva-voice-orb-btn wva-voice-orb-btn--${orbMode}`}
           type="button"
           aria-label={micLabel}
           disabled={busy && !listening}
@@ -274,24 +314,16 @@ export function VoiceAgent({ listingMode = false }) {
         >
           <VoiceOrb mode={orbMode} />
         </button>
-        <div className="forno-voice-canvas__copy">
-          <p className={`forno-voice-status forno-voice-status--${orbMode}`}>{micLabel}</p>
-          {liveCaption ? <p className="forno-voice-caption">{liveCaption}</p> : null}
+        <div className="wva-voice-canvas__copy">
+          <p className={`wva-voice-status wva-voice-status--${orbMode}`}>{micLabel}</p>
+          {liveCaption ? <p className="wva-voice-caption">{liveCaption}</p> : null}
         </div>
         {listingMode ? (
-          <div className="forno-voice-canvas__side">
-            {location.pathname === "/cart" ? (
-              <Link className="forno-voice-cart-link" to="/">
-                Menu
-              </Link>
-            ) : (
-              <Link className="forno-voice-cart-link" to="/cart">
-                Cart{itemCount > 0 ? ` · ${itemCount}` : ""}
-              </Link>
-            )}
+          <div className="wva-voice-canvas__side">
+            {renderListingSide?.()}
             <button
               type="button"
-              className="forno-voice-icon-btn"
+              className="wva-voice-icon-btn"
               aria-label="Settings"
               onClick={() => setSettingsOpen((v) => !v)}
             >
@@ -304,22 +336,22 @@ export function VoiceAgent({ listingMode = false }) {
   );
 
   return (
-    <div className={`forno-voice-agent${live ? " is-open" : ""}${listingMode ? " is-listing" : ""}`}>
+    <div className={`wva-voice-agent${live ? " is-open" : ""}${listingMode ? " is-listing" : ""}`}>
       {listingMode ? (
         speakBar
       ) : !open ? (
         <button
-          className="forno-voice-launcher"
+          className="wva-voice-launcher"
           type="button"
           onClick={() => {
             setOpen(true);
             setCaption("");
             if (!hasKey) setSettingsOpen(true);
           }}
-          aria-label="Open Forno voice"
+          aria-label={`Open ${title} voice`}
         >
           <VoiceOrb mode="idle" />
-          <span className="forno-voice-launcher__hint">Talk</span>
+          <span className="wva-voice-launcher__hint">{launcherLabel}</span>
         </button>
       ) : (
         speakBar

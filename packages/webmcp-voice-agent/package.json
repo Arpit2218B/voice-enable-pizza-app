@@ -1,0 +1,19 @@
+{
+  "name": "@webmcp/voice-agent",
+  "version": "0.1.0",
+  "description": "Plug-in voice agent for WebMCP-powered React apps",
+  "type": "module",
+  "main": "./src/index.js",
+  "exports": {
+    ".": "./src/index.js",
+    "./style.css": "./src/VoiceAgent.css"
+  },
+  "peerDependencies": {
+    "react": "^18.0.0",
+    "react-dom": "^18.0.0"
+  },
+  "files": [
+    "src"
+  ],
+  "license": "MIT"
+}
