@@ -1,0 +1,786 @@
+.forno-voice-agent {
+  position: fixed;
+  z-index: 40;
+  font-family: var(--font-body);
+  left: 0;
+  right: 0;
+  bottom: 0;
+  pointer-events: none;
+}
+
+.forno-voice-agent > * {
+  pointer-events: auto;
+}
+
+.forno-voice-agent.is-open {
+  top: auto;
+  height: var(--voice-dock-h, min(240px, 34dvh));
+  z-index: 30;
+}
+
+.forno-voice-agent.is-listing.is-open {
+  height: auto;
+  min-height: 0;
+}
+
+.forno-voice-canvas--listing {
+  height: auto;
+  overflow: visible;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  background: #121614;
+  grid-template-rows: auto auto;
+  align-content: end;
+  animation: none;
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+.forno-voice-canvas--listing .forno-voice-canvas__wash {
+  background: linear-gradient(180deg, rgba(18, 22, 20, 0.2), #121614 50%);
+}
+
+.forno-voice-canvas--listing .forno-voice-canvas__bloom {
+  width: 160px;
+  height: 160px;
+  left: 10%;
+  bottom: -40%;
+  opacity: 0.65;
+}
+
+.forno-voice-canvas--listing .forno-voice-canvas__orb-zone {
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px 14px;
+}
+
+.forno-voice-canvas__side {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  justify-self: end;
+}
+
+.forno-voice-cart-link {
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: rgba(246, 243, 238, 0.55);
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.forno-voice-canvas--listing .forno-voice-orb-btn {
+  width: 72px;
+  height: 72px;
+}
+
+.forno-voice-canvas--listing .forno-voice-status {
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  font-size: 0.72rem;
+  font-family: var(--font-body);
+  font-weight: 800;
+}
+
+.forno-voice-canvas--listing .forno-voice-settings {
+  margin: 8px 16px 0;
+  width: calc(100% - 32px);
+}
+
+/* —— Launcher —— */
+.forno-voice-launcher {
+  position: absolute;
+  left: 50%;
+  bottom: max(18px, env(safe-area-inset-bottom));
+  transform: translateX(-50%);
+  width: 76px;
+  height: 76px;
+  border: 0;
+  padding: 0;
+  border-radius: 50%;
+  background: transparent;
+  cursor: pointer;
+  filter: drop-shadow(0 14px 30px rgba(214, 59, 46, 0.38));
+  transition: transform 0.3s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.forno-voice-launcher:hover,
+.forno-voice-launcher:active {
+  transform: translateX(-50%) scale(1.08);
+}
+
+.forno-voice-launcher .forno-orb {
+  width: 100%;
+  height: 100%;
+}
+
+.forno-voice-launcher__hint {
+  position: absolute;
+  left: 50%;
+  bottom: -18px;
+  transform: translateX(-50%);
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+  white-space: nowrap;
+}
+
+/* —— Immersive voice canvas (not a sheet) —— */
+.forno-voice-canvas {
+  position: relative;
+  height: 100%;
+  width: 100%;
+  display: grid;
+  grid-template-rows: auto auto 1fr;
+  align-content: stretch;
+  color: #f6f3ee;
+  overflow: hidden;
+  animation: canvas-in 0.55s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.forno-voice-canvas__wash {
+  pointer-events: none;
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(ellipse at 50% 70%, rgba(214, 59, 46, 0.28), transparent 48%),
+    radial-gradient(ellipse at 20% 100%, rgba(47, 90, 60, 0.2), transparent 42%),
+    linear-gradient(180deg, transparent 0%, rgba(8, 10, 9, 0.55) 35%, #090b0a 100%);
+}
+
+.forno-voice-canvas__bloom {
+  pointer-events: none;
+  position: absolute;
+  left: 18%;
+  bottom: -10%;
+  width: min(280px, 70vw);
+  height: min(280px, 70vw);
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(255, 140, 100, 0.32), transparent 62%);
+  filter: blur(18px);
+  animation: bloom-breathe 4.5s ease-in-out infinite;
+}
+
+.forno-voice-canvas__chrome {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 8px 18px 0;
+}
+
+.forno-voice-canvas__meta {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-family: var(--font-display);
+  font-size: 0.95rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+.forno-voice-canvas__pulse {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #ff8a6a;
+  box-shadow: 0 0 12px rgba(255, 138, 106, 0.85);
+  animation: live-blink 1.6s ease-in-out infinite;
+}
+
+.forno-voice-canvas__cart {
+  margin-left: 4px;
+  padding: 4px 8px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.08);
+  font-family: var(--font-body);
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: rgba(246, 243, 238, 0.7);
+}
+
+.forno-voice-canvas__actions {
+  display: flex;
+  gap: 6px;
+}
+
+.forno-voice-icon-btn {
+  width: 36px;
+  height: 36px;
+  border: 0;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.06);
+  color: rgba(246, 243, 238, 0.85);
+  cursor: pointer;
+  transition: background 0.2s ease, transform 0.2s ease;
+}
+
+.forno-voice-icon-btn:hover,
+.forno-voice-icon-btn:active {
+  background: rgba(255, 255, 255, 0.12);
+  transform: scale(1.05);
+}
+
+.forno-voice-settings {
+  position: relative;
+  z-index: 2;
+  width: min(360px, calc(100% - 32px));
+  margin: 8px auto 0;
+  padding: 12px;
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.07);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  display: grid;
+  gap: 10px;
+  animation: fade-up 0.3s ease both;
+}
+
+.forno-voice-settings label {
+  display: grid;
+  gap: 6px;
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+.forno-voice-settings input {
+  padding: 10px 12px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 12px;
+  font: inherit;
+  background: rgba(0, 0, 0, 0.28);
+  color: white;
+  font-size: 16px;
+}
+
+.forno-voice-settings-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.forno-voice-settings-actions button {
+  border: 0;
+  border-radius: 999px;
+  padding: 8px 14px;
+  background: rgba(255, 255, 255, 0.1);
+  color: #f6f3ee;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.forno-voice-settings-actions button.primary {
+  background: #f6f3ee;
+  color: #121816;
+}
+
+.forno-voice-canvas__orb-zone {
+  position: relative;
+  z-index: 2;
+  display: grid;
+  grid-template-columns: auto 1fr;
+  align-items: center;
+  gap: 14px;
+  padding: 4px 18px max(18px, env(safe-area-inset-bottom));
+  min-height: 0;
+}
+
+.forno-voice-canvas__copy {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+
+.forno-voice-caption {
+  margin: 0;
+  max-height: 2.6em;
+  overflow: hidden;
+  text-align: left;
+  font-size: 0.82rem;
+  line-height: 1.35;
+  color: rgba(246, 243, 238, 0.62);
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  animation: fade-up 0.28s ease both;
+}
+
+.forno-voice-status {
+  margin: 0;
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 1rem;
+  letter-spacing: -0.03em;
+  color: rgba(246, 243, 238, 0.9);
+  text-align: left;
+}
+
+.forno-voice-status--listening {
+  color: #ffb39a;
+}
+
+.forno-voice-status--thinking {
+  color: #c8e0cf;
+}
+
+.forno-voice-status--speaking {
+  color: #ffd2a8;
+}
+
+.forno-voice-hint {
+  display: none;
+}
+
+.forno-voice-orb-btn {
+  position: relative;
+  width: 108px;
+  height: 108px;
+  border: 0;
+  padding: 0;
+  margin: 0;
+  background: transparent;
+  cursor: pointer;
+  border-radius: 50%;
+  animation: orb-pop 0.55s cubic-bezier(0.22, 1, 0.36, 1) both;
+  transition: transform 0.35s cubic-bezier(0.22, 1, 0.36, 1);
+  touch-action: manipulation;
+  flex-shrink: 0;
+}
+
+.forno-voice-orb-btn:hover:not(:disabled),
+.forno-voice-orb-btn:active:not(:disabled) {
+  transform: scale(1.05);
+}
+
+.forno-voice-orb-btn:disabled {
+  cursor: wait;
+}
+
+.forno-voice-orb-btn:focus-visible {
+  outline: 2px solid rgba(255, 180, 140, 0.7);
+  outline-offset: 8px;
+}
+
+/* —— Orb —— */
+.forno-orb {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  display: grid;
+  place-items: center;
+}
+
+.forno-orb__glow {
+  position: absolute;
+  inset: -28%;
+  border-radius: 50%;
+  background: radial-gradient(
+    circle,
+    rgba(255, 150, 110, 0.62) 0%,
+    rgba(214, 59, 46, 0.32) 40%,
+    rgba(47, 90, 60, 0.12) 62%,
+    transparent 74%
+  );
+  filter: blur(14px);
+  animation: orb-breathe 3.6s ease-in-out infinite;
+}
+
+.forno-orb__core {
+  position: relative;
+  width: 56%;
+  height: 56%;
+  border-radius: 50%;
+  overflow: hidden;
+  isolation: isolate;
+  box-shadow:
+    0 0 32px rgba(255, 120, 80, 0.55),
+    0 0 64px rgba(214, 59, 46, 0.32),
+    inset 0 0 22px rgba(255, 255, 255, 0.28);
+  animation: orb-breathe 3.6s ease-in-out infinite;
+}
+
+.forno-orb__blob {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(14px);
+  mix-blend-mode: screen;
+  will-change: transform;
+}
+
+.forno-orb__blob--1 {
+  width: 78%;
+  height: 78%;
+  left: 5%;
+  top: 8%;
+  background: radial-gradient(circle, #ff9a6b, #d63b2e 70%);
+  animation: blob-morph-1 5s ease-in-out infinite;
+}
+
+.forno-orb__blob--2 {
+  width: 70%;
+  height: 70%;
+  right: -8%;
+  bottom: 0;
+  background: radial-gradient(circle, #f0c27a, #c45a2c 75%);
+  animation: blob-morph-2 6s ease-in-out infinite;
+}
+
+.forno-orb__blob--3 {
+  width: 62%;
+  height: 62%;
+  left: 10%;
+  bottom: -10%;
+  background: radial-gradient(circle, #6fa87e, #2f5a3c 80%);
+  animation: blob-morph-3 4.5s ease-in-out infinite;
+}
+
+.forno-orb__shine {
+  position: absolute;
+  inset: 12% 18% auto;
+  height: 28%;
+  border-radius: 50%;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.55), transparent);
+  filter: blur(4px);
+  opacity: 0.7;
+}
+
+.forno-orb__ring {
+  position: absolute;
+  inset: 4%;
+  border-radius: 50%;
+  border: 1.5px solid rgba(255, 180, 140, 0.35);
+  opacity: 0;
+  pointer-events: none;
+}
+
+.forno-orb__wave {
+  position: absolute;
+  inset: 0;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.forno-orb__wave i {
+  display: block;
+  width: 4px;
+  height: 12px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.85);
+  animation: wave-bar 0.9s ease-in-out infinite;
+}
+
+.forno-orb__wave i:nth-child(2) {
+  animation-delay: 0.08s;
+  height: 18px;
+}
+.forno-orb__wave i:nth-child(3) {
+  animation-delay: 0.16s;
+  height: 26px;
+}
+.forno-orb__wave i:nth-child(4) {
+  animation-delay: 0.24s;
+  height: 18px;
+}
+.forno-orb__wave i:nth-child(5) {
+  animation-delay: 0.32s;
+}
+
+.forno-orb--listening .forno-orb__glow {
+  animation: orb-listen-glow 1.4s ease-in-out infinite;
+}
+
+.forno-orb--listening .forno-orb__core {
+  animation: orb-listen-core 1.4s ease-in-out infinite;
+}
+
+.forno-orb--listening .forno-orb__ring {
+  opacity: 1;
+  animation: ring-expand 1.8s ease-out infinite;
+}
+
+.forno-orb--listening .forno-orb__ring--b {
+  animation-delay: 0.45s;
+}
+
+.forno-orb--listening .forno-orb__ring--c {
+  animation-delay: 0.9s;
+}
+
+.forno-orb--thinking .forno-orb__glow {
+  animation: orb-think-glow 2s linear infinite;
+}
+
+.forno-orb--thinking .forno-orb__core {
+  animation: orb-spin 2.8s linear infinite;
+}
+
+.forno-orb--thinking .forno-orb__blob--1,
+.forno-orb--thinking .forno-orb__blob--2,
+.forno-orb--thinking .forno-orb__blob--3 {
+  animation-duration: 1.8s;
+}
+
+.forno-orb--speaking .forno-orb__glow {
+  animation: orb-speak-glow 0.9s ease-in-out infinite;
+}
+
+.forno-orb--speaking .forno-orb__core {
+  animation: orb-speak-core 0.9s ease-in-out infinite;
+}
+
+.forno-orb--speaking .forno-orb__wave {
+  display: flex;
+  opacity: 1;
+  z-index: 2;
+  mix-blend-mode: soft-light;
+}
+
+@keyframes canvas-in {
+  from {
+    opacity: 0;
+    transform: translateY(18%);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes bloom-breathe {
+  0%,
+  100% {
+    opacity: 0.7;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.08);
+  }
+}
+
+@keyframes orb-pop {
+  from {
+    opacity: 0;
+    transform: scale(0.55) translateY(28px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+@keyframes live-blink {
+  0%,
+  100% {
+    opacity: 0.55;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.15);
+  }
+}
+
+@keyframes fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes orb-breathe {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.06);
+  }
+}
+
+@keyframes orb-listen-glow {
+  0%,
+  100% {
+    transform: scale(1);
+    opacity: 0.85;
+  }
+  50% {
+    transform: scale(1.2);
+    opacity: 1;
+  }
+}
+
+@keyframes orb-listen-core {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.08);
+  }
+}
+
+@keyframes ring-expand {
+  0% {
+    transform: scale(0.75);
+    opacity: 0.55;
+  }
+  100% {
+    transform: scale(1.5);
+    opacity: 0;
+  }
+}
+
+@keyframes orb-think-glow {
+  0% {
+    filter: blur(14px) hue-rotate(0deg);
+    transform: scale(1);
+  }
+  50% {
+    filter: blur(18px) hue-rotate(18deg);
+    transform: scale(1.1);
+  }
+  100% {
+    filter: blur(14px) hue-rotate(0deg);
+    transform: scale(1);
+  }
+}
+
+@keyframes orb-spin {
+  from {
+    transform: rotate(0deg) scale(1);
+  }
+  50% {
+    transform: rotate(180deg) scale(1.05);
+  }
+  to {
+    transform: rotate(360deg) scale(1);
+  }
+}
+
+@keyframes orb-speak-glow {
+  0%,
+  100% {
+    transform: scale(1);
+    opacity: 0.8;
+  }
+  50% {
+    transform: scale(1.24);
+    opacity: 1;
+  }
+}
+
+@keyframes orb-speak-core {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+  35% {
+    transform: scale(1.1);
+  }
+  70% {
+    transform: scale(0.96);
+  }
+}
+
+@keyframes blob-morph-1 {
+  0%,
+  100% {
+    transform: translate(0, 0) scale(1);
+  }
+  33% {
+    transform: translate(12%, -8%) scale(1.12);
+  }
+  66% {
+    transform: translate(-6%, 10%) scale(0.92);
+  }
+}
+
+@keyframes blob-morph-2 {
+  0%,
+  100% {
+    transform: translate(0, 0) scale(1);
+  }
+  40% {
+    transform: translate(-14%, -6%) scale(1.15);
+  }
+  70% {
+    transform: translate(8%, 12%) scale(0.9);
+  }
+}
+
+@keyframes blob-morph-3 {
+  0%,
+  100% {
+    transform: translate(0, 0) scale(1);
+  }
+  50% {
+    transform: translate(10%, -14%) scale(1.18);
+  }
+}
+
+@keyframes wave-bar {
+  0%,
+  100% {
+    transform: scaleY(0.55);
+    opacity: 0.55;
+  }
+  50% {
+    transform: scaleY(1.35);
+    opacity: 1;
+  }
+}
+
+@media (min-width: 820px) {
+  .forno-voice-launcher {
+    left: auto;
+    right: 24px;
+    transform: none;
+  }
+
+  .forno-voice-launcher:hover,
+  .forno-voice-launcher:active {
+    transform: scale(1.08);
+  }
+
+  .forno-voice-launcher__hint {
+    display: none;
+  }
+
+  .forno-voice-orb-btn {
+    width: 120px;
+    height: 120px;
+  }
+
+  .forno-voice-canvas__orb-zone {
+    max-width: 560px;
+    margin: 0 auto;
+    width: 100%;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .forno-orb__glow,
+  .forno-orb__core,
+  .forno-orb__blob,
+  .forno-orb__ring,
+  .forno-orb__wave i,
+  .forno-voice-canvas,
+  .forno-voice-orb-btn,
+  .forno-voice-caption,
+  .forno-voice-settings,
+  .forno-voice-canvas__bloom,
+  .forno-voice-canvas__pulse {
+    animation: none !important;
+  }
+}
